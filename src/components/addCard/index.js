@@ -7,6 +7,7 @@ import { formatMonthYearExpiry } from '../../common/cardFormatting'
 import _ from 'lodash'
 import s from 'string'
 import payment from 'payment'
+import { CardIOUtilities } from 'react-native-awesome-card-io'
 
 export default class AddCard extends Component {
   constructor(props) {
@@ -21,6 +22,10 @@ export default class AddCard extends Component {
       expiry: '',
       cvc: ''
     }
+  }
+
+  componentWillMount() {
+    CardIOUtilities.preload()
   }
 
   componentDidMount() {
@@ -78,8 +83,15 @@ export default class AddCard extends Component {
   render() {
     const styles = _.merge({}, defaultStyles, this.props.styles)
     const calculatedState = this.calculatedState()
+    if (calculatedState.addingCard) {
+      return (
+        <View style={styles.activityIndicatorContainer}>
+          <ActivityIndicator color={this.props.activityIndicatorColor} size="large" style={styles.activityIndicator} />
+        </View>
+      )
+    }
     if (calculatedState.scanningCard) {
-      return <ScanCard didScanCard={(card) => this.didScanCard(card)} />
+      return <ScanCard scanCardGuideColor={this.props.scanCardGuideColor} didScanCard={(card) => this.didScanCard(card)} />
     }
     const addCardContents = (
       <View>
@@ -88,6 +100,7 @@ export default class AddCard extends Component {
           <TextInput
             ref="cardNumberInput"
             keyboardType="numeric"
+            underlineColorAndroid="transparent"
             style={styles.cardNumberInput}
             onChangeText={(rawCardNumber) => {
               const cardNumber = s(rawCardNumber).replaceAll(' ', '').s
@@ -107,82 +120,93 @@ export default class AddCard extends Component {
             }}
           />
         </View>
-        <View style={[styles.monthYearContainer, calculatedState.expiryShowError && styles.invalid]}>
-          <Image resizeMode="contain" style={styles.cardExpiryImage} source={require('../../../assets/images/card_expiry.png')} />
-          <TextInput
-            ref="expiryInput"
-            maxLength={5}
-            keyboardType="numeric"
-            style={styles.monthYearTextInput}
-            onChangeText={(expiry) => {
-              const newExpiry = formatMonthYearExpiry(expiry, calculatedState.expiry)
-              this.setState({ expiry: newExpiry })
-              if (_.size(newExpiry) === 5) {
-                if (payment.fns.validateCardExpiry(newExpiry)) {
-                  this.refs.cvcInput.focus()
-                } else {
-                  this.setState({ expiryDirty: true })
+        <View style={styles.monthYearCvcContainer}>
+          <View style={[styles.monthYearContainer, calculatedState.expiryShowError && styles.invalid]}>
+            <Image resizeMode="contain" style={styles.cardExpiryImage} source={require('../../../assets/images/card_expiry.png')} />
+            <TextInput
+              ref="expiryInput"
+              maxLength={5}
+              keyboardType="numeric"
+              underlineColorAndroid="transparent"
+              style={styles.monthYearTextInput}
+              onChangeText={(expiry) => {
+                const newExpiry = formatMonthYearExpiry(expiry, calculatedState.expiry)
+                this.setState({ expiry: newExpiry })
+                if (_.size(newExpiry) === 5) {
+                  if (payment.fns.validateCardExpiry(newExpiry)) {
+                    this.refs.cvcInput.focus()
+                  } else {
+                    this.setState({ expiryDirty: true })
+                  }
                 }
-              }
-            }}
-            value={calculatedState.expiry}
-            placeholder="MM/YY"
-            onFocus={() => this.props.onExpiryFocus && this.props.onExpiryFocus(calculatedState.expiry)}
-            onBlur={() => {
-              this.setState({ expiryDirty: true })
-              if (this.props.onExpiryBlur) {
-                this.props.onExpiryBlur(calculatedState.expiry)
-              }
-            }}
-          />
+              }}
+              value={calculatedState.expiry}
+              placeholder="MM/YY"
+              onFocus={() => this.props.onExpiryFocus && this.props.onExpiryFocus(calculatedState.expiry)}
+              onBlur={() => {
+                this.setState({ expiryDirty: true })
+                if (this.props.onExpiryBlur) {
+                  this.props.onExpiryBlur(calculatedState.expiry)
+                }
+              }}
+            />
+          </View>
+          <View style={[styles.cvcContainer, calculatedState.cvcShowError && styles.invalid]}>
+            <Image resizeMode="contain" style={styles.cvcImage} source={require('../../../assets/images/card_cvc.png')} />
+            <TextInput
+              ref="cvcInput"
+              keyboardType="numeric"
+              underlineColorAndroid="transparent"
+              style={styles.cvcInput}
+              onChangeText={(cvc) => this.setState({ cvc })}
+              value={calculatedState.cvc}
+              placeholder="CVC"
+              onFocus={() => this.props.onCvcFocus && this.props.onCvcFocus(calculatedState.cvc)}
+              onBlur={() => {
+                this.setState({ cvcDirty: true })
+                if (this.props.onCvcBlur) {
+                  this.props.onCvcBlur(calculatedState.cvc)
+                }
+              }}
+            />
+          </View>
         </View>
-        <View style={[styles.cvcContainer, calculatedState.cvcShowError && styles.invalid]}>
-          <Image resizeMode="contain" style={styles.cvcImage} source={require('../../../assets/images/card_cvc.png')} />
-          <TextInput
-            ref="cvcInput"
-            keyboardType="numeric"
-            style={styles.cvcInput}
-            onChangeText={(cvc) => this.setState({ cvc })}
-            value={calculatedState.cvc}
-            placeholder="CVC"
-            onFocus={() => this.props.onCvcFocus && this.props.onCvcFocus(calculatedState.cvc)}
-            onBlur={() => {
-              this.setState({ cvcDirty: true })
-              if (this.props.onCvcBlur) {
-                this.props.onCvcBlur(calculatedState.cvc)
-              }
-            }}
-          />
+        <View style={styles.errorTextContainer}>
+          <Text style={styles.errorText}>{calculatedState.error}</Text>
         </View>
-        <Text style={styles.errorText}>{calculatedState.error}</Text>
         <TouchableOpacity
-          style={styles.addButton}
+          style={styles.scanCardButton}
           styles={styles}
           onPress={() => {
             this.setState({ scanningCard: true })
           }}
           last
         >
-          <Text style={styles.addButtonText}>{calculatedState.hasTriedScan ? 'Scan Again' : 'Scan Card'}</Text>
+          <Text style={styles.scanCardButtonText}>
+            {calculatedState.hasTriedScan ? this.props.scanCardAfterScanButtonText || 'Scan Again' : this.props.scanCardButtonText || 'Scan Card'}
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.addButton}
           styles={styles}
           onPress={() => {
-            this.setState({ addingCard: true, expiryDirty: true, cardNumberDirty: true, cvcDirty: true })
-            this.props.addCardHandler(calculatedState.cardNumber, calculatedState.expiry, calculatedState.cvc)
-              .then(() => this.setState({ addingCard: false }))
-              .catch((error) => this.setState({ error: error.message, addingCard: false }))
+            this.setState({ expiryDirty: true, cardNumberDirty: true, cvcDirty: true })
+            if (this.isCardNumberValid() && this.isExpiryValid() && this.isCvcValid()) {
+              this.setState({ addingCard: true })
+              this.props.addCardHandler(calculatedState.cardNumber, calculatedState.expiry, calculatedState.cvc)
+                .then(() => this.setState({ addingCard: false }))
+                .catch((error) => this.setState({ error: error.message, addingCard: false }))
+            }
           }}
           last
         >
-          <Text style={styles.addButtonText}>Add Card</Text>
+          <Text style={styles.addButtonText}>{this.props.addCardButtonText || 'Add Card'}</Text>
         </TouchableOpacity>
       </View>
     )
     return (
       <KeyboardAvoidingView behavior="position" style={styles.addCardContainer}>
-        {calculatedState.addingCard ? <ActivityIndicator size="large" style={styles.activityIndicator} /> : addCardContents}
+        {addCardContents}
       </KeyboardAvoidingView>
     )
   }
