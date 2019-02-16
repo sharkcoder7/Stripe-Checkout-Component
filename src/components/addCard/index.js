@@ -31,13 +31,6 @@ export default class AddCard extends Component {
     scanCardAfterScanButtonText: React.PropTypes.string,
     scanCardVisible: React.PropTypes.bool,
     addCardButtonText: React.PropTypes.string,
-    placeholderTextColor: React.PropTypes.string,
-    cardNumberPlaceholderText: React.PropTypes.string,
-    expiryPlaceholderText: React.PropTypes.string,
-    cvcPlaceholderText: React.PropTypes.string,
-    cardNumberErrorMessage: React.PropTypes.string,
-    expiryErrorMessage: React.PropTypes.string,
-    cvcErrorMessage: React.PropTypes.string,
   }
 
   static defaultProps = {
@@ -46,13 +39,6 @@ export default class AddCard extends Component {
     scanCardAfterScanButtonText: 'Scan Again',
     scanCardButtonText: 'Scan Card',
     scanCardVisible: true,
-    placeholderTextColor: 'black',
-    cardNumberPlaceholderText: "4242 4242 4242 4242",
-    expiryPlaceholderText: "MM/YY",
-    cvcPlaceholderText: "CVC",
-    cardNumberErrorMessage: "Card Number is incorrect",
-    expiryErrorMessage: "Expiry is incorrect",
-    cvcErrorMessage: "CVC is incorrect",
   }
 
   constructor(props) {
@@ -114,11 +100,11 @@ export default class AddCard extends Component {
     const cvcShowError = this.state.cvcDirty && !this.isCvcValid()
     let error = ''
     if (cardNumberShowError) {
-        error = this.props.cardNumberErrorMessage
+      error = 'Card Number is incorrect'
     } else if (expiryShowError) {
-        error = this.props.expiryErrorMessage
+      error = 'Expiry is incorrect'
     } else if (cvcShowError) {
-        error = this.props.cvcErrorMessage
+      error = 'CVC is incorrect'
     }
     return {
       ...this.state,
@@ -152,7 +138,6 @@ export default class AddCard extends Component {
             keyboardType="numeric"
             underlineColorAndroid="transparent"
             style={styles.cardNumberInput}
-            placeholderTextColor={this.props.placeholderTextColor}
             onChangeText={(rawCardNumber) => {
               const cardNumber = s(rawCardNumber).replaceAll(' ', '').s
               this.setState({ cardNumber: cardNumber })
@@ -161,7 +146,7 @@ export default class AddCard extends Component {
               }
             }}
             value={calculatedState.cardNumberFormatted}
-            placeholder={this.props.cardNumberPlaceholderText}
+            placeholder="4242 4242 4242 4242"
             onFocus={() => this.props.onCardNumberFocus && this.props.onCardNumberFocus(calculatedState.cardNumber)}
             onBlur={() => {
               if (this.props.onCardNumberBlur) {
@@ -180,7 +165,6 @@ export default class AddCard extends Component {
               keyboardType="numeric"
               underlineColorAndroid="transparent"
               style={styles.monthYearTextInput}
-              placeholderTextColor={this.props.placeholderTextColor}
               onChangeText={(expiry) => {
                 const newExpiry = formatMonthYearExpiry(expiry, calculatedState.expiry)
                 this.setState({ expiry: newExpiry })
@@ -193,7 +177,7 @@ export default class AddCard extends Component {
                 }
               }}
               value={calculatedState.expiry}
-              placeholder={this.props.expiryPlaceholderText}
+              placeholder="MM/YY"
               onFocus={() => this.props.onExpiryFocus && this.props.onExpiryFocus(calculatedState.expiry)}
               onBlur={() => {
                 this.setState({ expiryDirty: true })
@@ -210,10 +194,9 @@ export default class AddCard extends Component {
               keyboardType="numeric"
               underlineColorAndroid="transparent"
               style={styles.cvcInput}
-              placeholderTextColor={this.props.placeholderTextColor}
               onChangeText={(cvc) => this.setState({ cvc })}
               value={calculatedState.cvc}
-              placeholder={this.props.cvcPlaceholderText}
+              placeholder="CVC"
               onFocus={() => this.props.onCvcFocus && this.props.onCvcFocus(calculatedState.cvc)}
               onBlur={() => {
                 this.setState({ cvcDirty: true })
