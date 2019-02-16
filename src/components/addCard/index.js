@@ -31,6 +31,13 @@ export default class AddCard extends Component {
     scanCardAfterScanButtonText: React.PropTypes.string,
     scanCardVisible: React.PropTypes.bool,
     addCardButtonText: React.PropTypes.string,
+    placeholderTextColor: React.PropTypes.string,
+    cardNumberPlaceholderText: React.PropTypes.string,
+    expiryPlaceholderText: React.PropTypes.string,
+    cvcPlaceholderText: React.PropTypes.string,
+    cardNumberErrorMessage: React.PropTypes.string,
+    expiryErrorMessage: React.PropTypes.string,
+    cvcErrorMessage: React.PropTypes.string,
   }
 
   static defaultProps = {
@@ -39,6 +46,13 @@ export default class AddCard extends Component {
     scanCardAfterScanButtonText: 'Scan Again',
     scanCardButtonText: 'Scan Card',
     scanCardVisible: true,
+    placeholderTextColor: 'black',
+    cardNumberPlaceholderText: '4242 4242 4242 4242',
+    expiryPlaceholderText: 'MM/YY',
+    cvcPlaceholderText: 'CVC',
+    cardNumberErrorMessage: 'Card Number is incorrect',
+    expiryErrorMessage: 'Expiry is incorrect',
+    cvcErrorMessage: 'CVC is incorrect',
   }
 
   constructor(props) {
@@ -51,7 +65,7 @@ export default class AddCard extends Component {
       cardNumber: '',
       error: null,
       expiry: '',
-      cvc: ''
+      cvc: '',
     }
   }
 
@@ -100,11 +114,11 @@ export default class AddCard extends Component {
     const cvcShowError = this.state.cvcDirty && !this.isCvcValid()
     let error = ''
     if (cardNumberShowError) {
-      error = 'Card Number is incorrect'
+      error = this.props.cardNumberErrorMessage
     } else if (expiryShowError) {
-      error = 'Expiry is incorrect'
+      error = this.props.expiryErrorMessage
     } else if (cvcShowError) {
-      error = 'CVC is incorrect'
+      error = this.props.cvcErrorMessage
     }
     return {
       ...this.state,
@@ -127,7 +141,7 @@ export default class AddCard extends Component {
       )
     }
     if (calculatedState.scanningCard) {
-      return <ScanCard scanCardGuideColor={this.props.scanCardGuideColor} didScanCard={(card) => this.didScanCard(card)} />
+      return <ScanCard scanCardGuideColor={this.props.scanCardGuideColor} didScanCard={card => this.didScanCard(card)} />
     }
     const addCardContents = (
       <View>
@@ -138,7 +152,8 @@ export default class AddCard extends Component {
             keyboardType="numeric"
             underlineColorAndroid="transparent"
             style={styles.cardNumberInput}
-            onChangeText={(rawCardNumber) => {
+            placeholderTextColor={this.props.placeholderTextColor}
+            onChangeText={rawCardNumber => {
               const cardNumber = s(rawCardNumber).replaceAll(' ', '').s
               this.setState({ cardNumber: cardNumber })
               if (payment.fns.validateCardNumber(cardNumber)) {
@@ -146,7 +161,7 @@ export default class AddCard extends Component {
               }
             }}
             value={calculatedState.cardNumberFormatted}
-            placeholder="4242 4242 4242 4242"
+            placeholder={this.props.cardNumberPlaceholderText}
             onFocus={() => this.props.onCardNumberFocus && this.props.onCardNumberFocus(calculatedState.cardNumber)}
             onBlur={() => {
               if (this.props.onCardNumberBlur) {
@@ -165,7 +180,8 @@ export default class AddCard extends Component {
               keyboardType="numeric"
               underlineColorAndroid="transparent"
               style={styles.monthYearTextInput}
-              onChangeText={(expiry) => {
+              placeholderTextColor={this.props.placeholderTextColor}
+              onChangeText={expiry => {
                 const newExpiry = formatMonthYearExpiry(expiry, calculatedState.expiry)
                 this.setState({ expiry: newExpiry })
                 if (_.size(newExpiry) === 5) {
@@ -177,7 +193,7 @@ export default class AddCard extends Component {
                 }
               }}
               value={calculatedState.expiry}
-              placeholder="MM/YY"
+              placeholder={this.props.expiryPlaceholderText}
               onFocus={() => this.props.onExpiryFocus && this.props.onExpiryFocus(calculatedState.expiry)}
               onBlur={() => {
                 this.setState({ expiryDirty: true })
@@ -194,9 +210,10 @@ export default class AddCard extends Component {
               keyboardType="numeric"
               underlineColorAndroid="transparent"
               style={styles.cvcInput}
-              onChangeText={(cvc) => this.setState({ cvc })}
+              placeholderTextColor={this.props.placeholderTextColor}
+              onChangeText={cvc => this.setState({ cvc })}
               value={calculatedState.cvc}
-              placeholder="CVC"
+              placeholder={this.props.cvcPlaceholderText}
               onFocus={() => this.props.onCvcFocus && this.props.onCvcFocus(calculatedState.cvc)}
               onBlur={() => {
                 this.setState({ cvcDirty: true })
@@ -210,8 +227,7 @@ export default class AddCard extends Component {
         <View style={styles.errorTextContainer}>
           <Text style={styles.errorText}>{calculatedState.error}</Text>
         </View>
-        {
-          this.props.scanCardVisible ?
+        {this.props.scanCardVisible ? (
           <TouchableOpacity
             style={styles.scanCardButton}
             styles={styles}
@@ -220,14 +236,13 @@ export default class AddCard extends Component {
                 this.props.onScanCardOpen()
               }
               if (Platform.OS === 'android') {
-                CardIOModule
-                  .scanCard({
-                    // guideColor: this.props.scanCardGuideColor, // This isn't working at the moment.
-                    hideCardIOLogo: true,
-                    suppressManualEntry: true,
-                    suppressConfirmation: true,
-                  })
-                  .then((card) => this.didScanCard(card))
+                CardIOModule.scanCard({
+                  // guideColor: this.props.scanCardGuideColor, // This isn't working at the moment.
+                  hideCardIOLogo: true,
+                  suppressManualEntry: true,
+                  suppressConfirmation: true,
+                })
+                  .then(card => this.didScanCard(card))
                   .catch(() => {
                     let refToFocus
                     if (!calculatedState.cardNumber) {
@@ -247,12 +262,9 @@ export default class AddCard extends Component {
             }}
             last
           >
-          <Text style={styles.scanCardButtonText}>
-            {calculatedState.hasTriedScan ? this.props.scanCardAfterScanButtonText : this.props.scanCardButtonText}
-          </Text>
+            <Text style={styles.scanCardButtonText}>{calculatedState.hasTriedScan ? this.props.scanCardAfterScanButtonText : this.props.scanCardButtonText}</Text>
           </TouchableOpacity>
-        : null
-        }
+        ) : null}
 
         <TouchableOpacity
           style={styles.addButton}
@@ -261,9 +273,10 @@ export default class AddCard extends Component {
             this.setState({ expiryDirty: true, cardNumberDirty: true, cvcDirty: true })
             if (this.isCardNumberValid() && this.isExpiryValid() && this.isCvcValid()) {
               this.setState({ addingCard: true })
-              this.props.addCardHandler(calculatedState.cardNumber, calculatedState.expiry, calculatedState.cvc)
+              this.props
+                .addCardHandler(calculatedState.cardNumber, calculatedState.expiry, calculatedState.cvc)
                 .then(() => this.setState({ addingCard: false }))
-                .catch((error) => this.setState({ error: error.message, addingCard: false }))
+                .catch(error => this.setState({ error: error.message, addingCard: false }))
             }
           }}
           last
@@ -274,9 +287,7 @@ export default class AddCard extends Component {
     )
     return (
       <View style={{ flex: 1 }}>
-        <View style={[styles.addCardContainer, this.props.style]}>
-          {addCardContents}
-        </View>
+        <View style={[styles.addCardContainer, this.props.style]}>{addCardContents}</View>
         {Platform.OS === 'android' ? null : <KeyboardSpacer /> /* Android takes care of this for us. */}
       </View>
     )
