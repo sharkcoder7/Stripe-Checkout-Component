@@ -4,12 +4,21 @@ React Native component which mimics Stripe's ios component.
 
 For iOS and Android
 
+Note: This plugin is dependent from react-native-awesome-card-io, which you have to install manually and link  
+
+## Installation
+
+```Bash
+$ npm i react-native-stripe-checkout --save
+$ react-native link react-native-awesome-card-io 
+```
+
 ## Usage
 
 ```
   <SelectPayment
     enableApplePay={true} // optional, default: false
-    applePayHandler={() => console.log('apple pay is go')} // optional, mandatory if enableApplePay={true} 
+    applePayHandler={() => console.log('apple pay is go')} // optional, mandatory if enableApplePay={true}
     paymentSources={[{}]} // mandatory, See: [Customer Object](https://stripe.com/docs/api/node#customer_object) -> sources -> data for exact format.
     selectPaymentHandler={(paymentSource) => console.log(paymentSource)}
     fontFamily="" // Optional, Default: iOS default
@@ -17,8 +26,8 @@ For iOS and Android
     //more custom styles
 
   />
-  
-  <AddCard 
+
+  <AddCard
     createCardHandler={(cardDetails) => console.log(cardDetails)}
     invalidStyle={{borderColor: 'red'}} // Optional. Default: {borderColor: 'red'}
     fontFamily="" // Optional, Default: iOS default
@@ -31,20 +40,21 @@ For iOS and Android
 When the component is rendered it shows the user their existing cards.
 
 ![](https://stripe.com/img/blog/posts/ui-components-for-ios/wallet@2x.png)
+
 No Nav. No card picture. Apple pay present if it exists. Simple Add button at bottom. Tapping a payment option, fires `selectPaymentMethod`
 
 ## Adding a card
 
-We provide support for the minimal number of fields: 
+We provide support for the minimal number of fields:
 
 * Card Number
 * Expiry Month
 * Expiry Year
 * CVC
 
-These fields are validated using https://github.com/jessepollak/payment. 
+These fields are validated using https://github.com/jessepollak/payment.
 
-![](https://stripe.com/img/documentation/ios/stripe-ios-ui-theming.png)
+![](https://stripe.com/img/documentation/mobile/ios/stripe-ios-ui-theming.png)
 
 Add button goes at the bottom. No nav. No card diagram.
 
